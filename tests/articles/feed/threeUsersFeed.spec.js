@@ -1,27 +1,29 @@
-import { test } from '../../_fixtures/fixtures';
+import { test, expect } from '../../_fixtures/fixtures';
 import { signUpUser } from '../../../src/ui/actions/auth/signUpUser';
 import { generateNewArticleData } from '../../../src/common/testData/generateNewArticleData';
 
-const users = ['user1', 'user2', 'user3'];
+const users = [
+  { username: 'user1', email: 'user1@example.com', password: 'Password1!' },
+  { username: 'user2', email: 'user2@example.com', password: 'Password1!' },
+  { username: 'user3', email: 'user3@example.com', password: 'Password1!' },
+];
 
-test.describe('Лента статей показывает статьи других пользователей', () => {
-  let articles = [];
+test.describe('Лента статей с несколькими пользователями', () => {
+  let articles;
 
-  test.beforeEach(async ({ page, logger }) => {
+  test.beforeEach(async ({ browser }) => {
     articles = [];
+    for (const user of users) {
+      const context = await browser.newContext();
+      const page = await context.newPage();
 
-    for (const username of users) {
-      const article = generateNewArticleData(logger);
+      const article = generateNewArticleData();
       articles.push(article);
 
-      await signUpUser(page, {
-        username,
-        email: `${username}@example.com`,
-        password: 'Password1!',
-      });
+      await signUpUser(page, user);
+
       await page.goto('/');
       await page.click('text=New Article');
-
       await page.fill('input[placeholder="Article Title"]', article.title);
       await page.fill(
         'input[placeholder="What\'s this article about?"]',
@@ -32,19 +34,23 @@ test.describe('Лента статей показывает статьи дру�
         article.text,
       );
       await page.click('text=Publish Article');
+
+      await context.close();
     }
   });
+
   test('Пользователь видит статьи двух других пользователей в ленте', async ({
-    page,
+    browser,
   }) => {
-    await signUpUser(page, {
-      username: 'user1',
-      email: 'user1@example.com',
-      password: 'Password1!',
-    });
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    await signUpUser(page, users[0]);
     await page.goto('/');
 
-    await page.locator(`text=${articles[1].title}`).shouldBeVisible();
-    await page.locator(`text=${articles[2].title}`).shouldBeVisible();
+    await expect(page.locator(`text=${articles[1].title}`)).toBeVisible();
+    await expect(page.locator(`text=${articles[2].title}`)).toBeVisible();
+
+    await context.close();
   });
 });
