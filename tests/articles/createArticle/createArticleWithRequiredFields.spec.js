@@ -9,7 +9,8 @@ const tagSets = [
 ];
 
 tagSets.forEach(tags => {
-  test.describe(`Create and edit article with ${tags.length} tag(s)`, () => {
+  test.describe(`Create, edit, and remove tags with
+     ${tags.length} tag(s)`, () => {
     let article;
 
     test.beforeEach(async ({ page, user, logger }) => {
@@ -40,8 +41,8 @@ tagSets.forEach(tags => {
       await viewArticlePage.assertTagsAreVisible(tags);
     });
 
-    test(`User can remove all tags from an article with
-       ${tags.length} tag(s)`, async ({
+    test(`User can remove all tags from an article with 
+      ${tags.length} tag(s)`, async ({
       homePage,
       createArticlePage,
       viewArticlePage,
@@ -64,6 +65,28 @@ tagSets.forEach(tags => {
       await editArticlePage.clickPublishArticleButton();
 
       await viewArticlePage.assertTagsAreNotVisible();
+    });
+
+    test(`User can add ${tags.length} tag(s) during article edit`, async ({
+      homePage,
+      createArticlePage,
+      viewArticlePage,
+      editArticlePage,
+    }) => {
+      await homePage.clickNewArticleLink();
+      await createArticlePage.fillTitleField(article.title);
+      await createArticlePage.fillDescriptionField(article.description);
+      await createArticlePage.fillTextField(article.text);
+      await createArticlePage.clickPublishArticleButton();
+
+      await viewArticlePage.clickEditArticleButton();
+      for (const tag of tags) {
+        await editArticlePage.fillTagsField(tag);
+        await editArticlePage.pressEnterToAddTag();
+      }
+      await editArticlePage.clickPublishArticleButton();
+
+      await viewArticlePage.assertTagsAreVisible(tags);
     });
   });
 });
